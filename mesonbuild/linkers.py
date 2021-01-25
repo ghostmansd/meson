@@ -1372,3 +1372,9 @@ class CudaLinker(PosixDynamicLinkerMixin, DynamicLinker):
                         suffix: str, soversion: str, darwin_versions: T.Tuple[str, str],
                         is_shared_module: bool) -> T.List[str]:
         return []
+
+class TccLinker(PosixDynamicLinkerMixin, DynamicLinker):
+    id = 'tcc'
+
+    def get_allow_undefined_args(self) -> T.List[str]:
+        return []

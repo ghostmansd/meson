@@ -62,6 +62,7 @@ from .linkers import (
     PGIDynamicLinker,
     PGIStaticLinker,
     SolarisDynamicLinker,
+    TccLinker,
     AIXDynamicLinker,
     XilinkDynamicLinker,
     CudaLinker,
@@ -116,6 +117,7 @@ from .compilers import (
     PGICPPCompiler,
     PGIFortranCompiler,
     RustCompiler,
+    TccCompiler,
     CcrxCCompiler,
     CcrxCPPCompiler,
     Xc16CCompiler,
@@ -1229,6 +1231,8 @@ class Environment:
             elif compiler_name in {'icl', 'icl.exe'}:
                 # if you pass anything to icl you get stuck in a pager
                 arg = ''
+            elif compiler_name in {'tcc', 'tinycc'}:
+                arg = '-v'
             else:
                 arg = '--version'
 
@@ -1449,6 +1453,14 @@ class Environment:
                 return cls(
                     ccache + compiler, version, for_machine, is_cross, info,
                     exe_wrap, full_version=full_version, linker=linker)
+
+            if 'tcc' in out:
+                cls = TccCompiler
+                self.coredata.add_lang_args(cls.language, cls, for_machine, self)
+                linker = TccLinker(compiler, for_machine, TccCompiler.LINKER_PREFIX, [], version=version)
+                return cls(
+                    compiler, version, for_machine, is_cross, info,
+                    exe_wrap, full_version=version, linker=linker)
 
 
         self._handle_exceptions(popen_exceptions, compilers)

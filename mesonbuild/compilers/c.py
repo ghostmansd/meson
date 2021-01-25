@@ -711,3 +711,51 @@ class C2000CCompiler(C2000Compiler, CCompiler):
         if path == '':
             path = '.'
         return ['--include_path=' + path]
+
+
+class TccCompiler(CCompiler):
+    LINKER_PREFIX = '-Wl,'
+
+    def __init__(self, exelist: T.List[str], version: str, for_machine: MachineChoice, is_cross: bool,
+                 info: 'MachineInfo', exe_wrapper: T.Optional['ExternalProgram'] = None,
+                 linker: T.Optional['DynamicLinker'] = None,
+                 defines: T.Optional[T.Dict[str, str]] = None,
+                 full_version: T.Optional[str] = None):
+        CCompiler.__init__(self, exelist, version, for_machine, is_cross, info, exe_wrapper, linker=linker, full_version=full_version)
+        default_warn_args = ['-Wall']
+        self.id = 'tcc'
+        self.warn_args = {
+          '0': [],
+          '1': default_warn_args,
+          '2': default_warn_args + ['-Wextra'],
+          '3': default_warn_args + ['-Wextra', '-Wunsupported'],
+        }
+
+    def get_options(self) -> 'KeyedOptionDictType':
+        opts = super().get_options()
+        key = OptionKey('std', machine=self.for_machine, lang=self.language)
+        opts[key].choices = ['none', 'c89', 'c99', 'c11']
+        return opts
+
+    def get_buildtype_args(self, buildtype: str) -> T.List[str]:
+        return []
+
+    def get_debug_args(self, is_debug: bool) -> T.List[str]:
+        return ([], ['-g'])[is_debug]
+
+    def get_compile_only_args(self) -> T.List[str]:
+        return ['-c']
+
+    def get_output_args(self, target: str) -> T.List[str]:
+        return ['-o', target]
+
+    def get_pic_args(self) -> T.List[str]:
+        raise MesonException('position-independent code is not supported')
+
+    def compute_parameters_with_absolute_paths(self, parameter_list: T.List[str], build_dir: str) -> T.List[str]:
+        for idx, i in enumerate(parameter_list):
+            if i[:2] == '-I' or i[:2] == '-L':
+                parameter_list[idx] = i[:2] + os.path.normpath(os.path.join(build_dir, i[2:]))
+
+    def get_optimization_args(self, optimization_level: str) -> T.List[str]:
+        return []
